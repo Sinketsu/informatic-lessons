@@ -24,12 +24,12 @@ class TBitSet
         uint8_t getlength() const;
         TBitSet(uint8_t) throw (int);
         ~TBitSet();
-        std::string to_string() const;
-        int to_int() const;
-        const TBitSet& operator+ (const TBitSet&);
-        const TBitSet& operator- (const TBitSet&);
+        std::string to_string();
+        int64_t to_int();
+        TBitSet& operator+ (TBitSet&);
+        TBitSet& operator- (TBitSet&);
         TBitSet& operator++ (int);
-        const TBitSet& operator-- (int);
+        TBitSet& operator-- (int);
         uint8_t& operator[] (int);
         TBitSet& operator= (int64_t);
 };
@@ -79,7 +79,7 @@ TBitSet::~TBitSet()
     delete data;
 }
 
-std::string TBitSet::to_string() const
+std::string TBitSet::to_string()
 {
     std::string s = "";
     for (int i = 0; i < length; i++)
@@ -87,17 +87,39 @@ std::string TBitSet::to_string() const
     return s;
 }
 
-int TBitSet::to_int() const
+int64_t TBitSet::to_int()
 {
-    return 10;
+    if (data[0] == 0)
+    {
+        int64_t value = 0;
+        for (uint8_t i = this->length - 1; i > 0; i--)
+        {
+            value += data[i] * pow(2, this->length - i - 1);
+        }
+        return value;
+    }
+    else
+    {
+        int64_t value = 0;
+        to_direct_code();
+        std::cout << to_string() << std::endl;
+        for (uint8_t i = this->length - 1; i > 0; i--)
+        {
+            value -= data[i] * pow(2, this->length - i - 1);
+        }
+
+        to_alt_code();
+        return value;
+    }
+
 }
 
-const TBitSet& operator+ (const TBitSet& i)
+TBitSet& operator+ (TBitSet& i)
 {
     return i;
 }
 
-const TBitSet operator- (const TBitSet& i)
+TBitSet operator- (TBitSet& i)
 {
     TBitSet r( i.getlength() );
     r = -i.to_int();
@@ -106,14 +128,6 @@ const TBitSet operator- (const TBitSet& i)
 
 TBitSet& TBitSet::operator++ (int value)
 {
-    /*
-    if (value == (pow(2, length - 1) - 2))
-    {
-        overflow = true;
-        clear_data();
-        return *this;
-    }*/
-
     data[length - 1]++;
     for (int i = length - 1; i >= 0; i--)
     {
@@ -128,6 +142,29 @@ TBitSet& TBitSet::operator++ (int value)
     }
     overflow = false;
     return *this;
+}
+
+TBitSet& TBitSet::operator-- (int value)
+{
+    bool flag = true;
+    overflow = false;
+    for (int i = length - 1; i >= 0; i--)
+    {
+        if (flag && (data[i] == 1))
+        {
+            data[i] = 0;
+            flag = false;
+        }
+        else
+        if (flag && (data[i] == 0))
+        {
+            data[i] = 1;
+        }
+        if (flag == false)
+            break;
+    }
+    if (flag)
+        overflow = true;
 }
 
 uint8_t& TBitSet::operator[] (int i)
