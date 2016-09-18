@@ -49,12 +49,20 @@ void TBitSet::to_alt_code()
 
 void TBitSet::to_direct_code()
 {
+
     if (data[0] == 1)
     {
+        bool flag = false;
         this->operator--(1);
-        for (uint8_t i = 1; i < length; i++)
+        for (uint8_t i = 0; i < length; i++)
                 data[i] = (data[i] == 0) ? 1 : 0;
-        data[0] = 0;
+        for (uint8_t i = 1; i < length; i++)
+            if (data[i] != 0)
+            {
+                flag = true;
+            }
+        if (flag)
+            data[0] = 0;
     }
 }
 
@@ -198,7 +206,7 @@ TBitSet& TBitSet::operator+= (TBitSet& value)
     for (int8_t i = l - 1; i >= 0; i--)
     {
         data[i + delta] += value[i];
-        std::cout << (int)data[i + delta] << "\t";
+
         if (data[i + delta] >= 2)
         {
             data[i + delta] -= 2;
@@ -236,6 +244,12 @@ TBitSet& TBitSet::operator+= (TBitSet& value)
     }
     overflow = false;
     return *this;
+}
+
+TBitSet& TBitSet::operator-=(TBitSet& value)
+{
+    value = -(value.to_int());
+    this->operator+=(value);
 }
 
 uint8_t& TBitSet::operator[] (int i)
