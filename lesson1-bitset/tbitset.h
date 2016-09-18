@@ -5,12 +5,26 @@
 #include <stdint.h>
 #include <string>
 #include <math.h>
-
-#define EMALLOCERROR 0
-#define EVALUEOVERFLOW 1
+#include <exception>
 
 #define getbit(x,pos)   ( ((x) & ( 0x1 << (pos) )) !=0 )
 
+class EMALLOCERROR : std::exception
+{
+    public:
+        std::string what()
+        {
+            return std::string("Length not in 0..64 range.");
+        }
+};
+class EVALUEOVERFLOW : std::exception
+{
+    public:
+        std::string what()
+        {
+            return std::string("The value requires more space than is available.");
+        }
+};
 
 class TBitSet
 {
@@ -22,21 +36,22 @@ class TBitSet
         void to_direct_code();
         void clear_data();
         void resize(uint8_t);
+        void shl(uint8_t);
+        void shr(uint8_t);
     public:
         uint8_t getlength();
-        TBitSet(uint8_t) throw (int);
-        ~TBitSet();
+        TBitSet(uint8_t) throw (EMALLOCERROR);
         std::string to_string();
         int64_t to_int();
         bool get_overflow_flag();
-        TBitSet& operator+ (TBitSet&);
-        TBitSet& operator- (TBitSet&);
         TBitSet& operator++ (int);
         TBitSet& operator-- (int);
         TBitSet& operator+= (TBitSet&);
         TBitSet& operator-= (TBitSet&);
+        TBitSet& operator<< (int);
+        TBitSet& operator>> (int);
         uint8_t& operator[] (int);
-        TBitSet& operator= (int64_t);
+        TBitSet& operator= (int64_t) throw (EVALUEOVERFLOW);
 };
 
 void TBitSet::to_alt_code()
@@ -66,6 +81,22 @@ void TBitSet::to_direct_code()
     }
 }
 
+void TBitSet::shl(uint8_t c)
+{
+    for (int i = 0; i < length - c; i++)
+        data[i] = data[i + c];
+    for (int i = length - c; i < length; i++)
+        data[i] = 0;
+}
+
+void TBitSet::shr(uint8_t c)
+{
+    for (int i = length - c; i >= 0; i--)
+        data[i + c] = data[i];
+    for (int i = 0; i < c; i++)
+        data[i] = 0;
+}
+
 void TBitSet::clear_data()
 {
     for (uint8_t i = 0; i < length; i++)
@@ -91,25 +122,17 @@ bool TBitSet::get_overflow_flag()
     return overflow;
 }
 
-TBitSet::TBitSet(uint8_t length) throw (int)
+TBitSet::TBitSet(uint8_t length) throw (EMALLOCERROR)
 {
-    if (!( (length > 64) || (length % 8 != 0)))
+    if (!( (length > 64)))
     {
         this->length = length;
         data = new uint8_t[length];
         overflow = false;
-        for (uint8_t i = 0; i < length; i++)
-            data[i] = 0;
-        std::cout << "object created;" << std::endl;
+        clear_data();
     }
     else
-        throw EMALLOCERROR;
-}
-
-TBitSet::~TBitSet()
-{
-    delete data;
-    std::cout << "object destroyed;" << std::endl;
+        throw EMALLOCERROR();
 }
 
 std::string TBitSet::to_string()
@@ -143,18 +166,6 @@ int64_t TBitSet::to_int()
         return -value;
     }
 
-}
-
-TBitSet& operator+ (TBitSet& i)
-{
-    return i;
-}
-
-TBitSet operator- (TBitSet& i)
-{
-    TBitSet r( i.getlength() );
-    r = -i.to_int();
-    return r;
 }
 
 TBitSet& TBitSet::operator++ (int value)
@@ -196,10 +207,16 @@ TBitSet& TBitSet::operator-- (int value)
     }
     if (flag)
         overflow = true;
+    return *this;
 }
 
 TBitSet& TBitSet::operator+= (TBitSet& value)
 {
+    if (this == &value)
+    {
+        shl(1);
+        return *this;
+    }
     resize(std::max(length, value.getlength()));
     int8_t l = std::min(length, value.getlength());
     int8_t delta = length - value.getlength();
@@ -248,8 +265,26 @@ TBitSet& TBitSet::operator+= (TBitSet& value)
 
 TBitSet& TBitSet::operator-=(TBitSet& value)
 {
+    if (this == &value)
+    {
+        *this = 0;
+        return *this;
+    }
     value = -(value.to_int());
     this->operator+=(value);
+    return *this;
+}
+
+TBitSet& TBitSet::operator<<(int len)
+{
+    shl(len);
+    return *this;
+}
+
+TBitSet& TBitSet::operator>>(int len)
+{
+    shr(len);
+    return *this;
 }
 
 uint8_t& TBitSet::operator[] (int i)
@@ -257,12 +292,12 @@ uint8_t& TBitSet::operator[] (int i)
     return data[i];
 }
 
-TBitSet& TBitSet::operator= (int64_t value)
+TBitSet& TBitSet::operator= (int64_t value) throw (EVALUEOVERFLOW)
 {
     if ((value > 0) && (value > (pow(2, length - 1) - 1) ))
-        throw EVALUEOVERFLOW;
+        throw EVALUEOVERFLOW();
     if ((value < 0) && (value < -(pow(2, length - 1)) ))
-        throw EVALUEOVERFLOW;
+        throw EVALUEOVERFLOW();
 
     if (value >= 0)
     {
@@ -278,6 +313,16 @@ TBitSet& TBitSet::operator= (int64_t value)
         to_alt_code();
     }
     overflow = false;
+}
+
+TBitSet operator+ (TBitSet& left, TBitSet& right)
+{
+    return TBitSet(left) += right;
+}
+
+TBitSet& operator- (TBitSet& left, TBitSet& right)
+{
+    return TBitSet(left) -= right;
 }
 
 #endif // TBITSET_H_INCLUDED
