@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdint.h>
 #include <string>
+#include <sstream>
 #include <math.h>
 #include <exception>
 
@@ -11,18 +12,26 @@
 
 class EMALLOCERROR : std::exception
 {
+    private: int length;
     public:
+        EMALLOCERROR(int64_t i) : length(i) {};
         std::string what()
         {
-            return std::string("Length not in 0..64 range.");
+            std::stringstream ss;
+            ss << "Your length " << length << " not in range 1..64.";
+            return ss.str();
         }
 };
 class EVALUEOVERFLOW : std::exception
 {
+    private: int64_t value;
     public:
+        EVALUEOVERFLOW(int64_t i) : value(i) {};
         std::string what()
         {
-            return std::string("The value requires more space than is available.");
+            std::stringstream ss;
+            ss << "Your value " << value << " is too large.";
+            return ss.str();
         }
 };
 
@@ -105,11 +114,14 @@ void TBitSet::clear_data()
 
 void TBitSet::resize(uint8_t len)
 {
-    int64_t a = to_int();
-    data = new uint8_t[len];
-    length = len;
-    clear_data();
-    this->operator=(a);
+    if (length != len)
+    {
+        int64_t a = to_int();
+        data = new uint8_t[len];
+        length = len;
+        clear_data();
+        *this = a;
+    }
 }
 
 uint8_t TBitSet::getlength()
@@ -122,17 +134,17 @@ bool TBitSet::get_overflow_flag()
     return overflow;
 }
 
-TBitSet::TBitSet(uint8_t length) throw (EMALLOCERROR)
+TBitSet::TBitSet(uint8_t len) throw (EMALLOCERROR)
 {
-    if (!( (length > 64)))
+    if ((len > 0) && (len <= 64))
     {
-        this->length = length;
+        length = len;
         data = new uint8_t[length];
         overflow = false;
         clear_data();
     }
     else
-        throw EMALLOCERROR();
+        throw EMALLOCERROR(len);
 }
 
 std::string TBitSet::to_string()
@@ -217,6 +229,7 @@ TBitSet& TBitSet::operator+= (TBitSet& value)
         shl(1);
         return *this;
     }
+
     resize(std::max(length, value.getlength()));
     int8_t l = std::min(length, value.getlength());
     int8_t delta = length - value.getlength();
@@ -295,9 +308,17 @@ uint8_t& TBitSet::operator[] (int i)
 TBitSet& TBitSet::operator= (int64_t value) throw (EVALUEOVERFLOW)
 {
     if ((value > 0) && (value > (pow(2, length - 1) - 1) ))
-        throw EVALUEOVERFLOW();
+        throw EVALUEOVERFLOW(value);
     if ((value < 0) && (value < -(pow(2, length - 1)) ))
-        throw EVALUEOVERFLOW();
+        throw EVALUEOVERFLOW(value);
+
+    if (value == -(pow(2, length - 1)))
+    {
+        clear_data();
+        data[0] = 1;
+        overflow = false;
+        return *this;
+    }
 
     if (value >= 0)
     {

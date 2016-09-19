@@ -2,19 +2,13 @@
 
 int main(int argc, char **argv)
 {
-    TBitSet s(8);
-    try
-    {
-        s = 12;
-    }
-    catch (EVALUEOVERFLOW& e)
-    {
-        std::cout << e.what() << std::endl;
-    }
+    TBitSet s(6);
+    TBitSet g(6);
 
     std::cout << s.to_string() << std::endl;
-    s >> 2;
+    s -= g;
     std::cout << s.to_string() << std::endl;
+    std::cout << s.to_int() << std::endl;
 
     return 0;
 }
