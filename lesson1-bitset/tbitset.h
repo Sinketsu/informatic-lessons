@@ -10,24 +10,24 @@
 
 #define getbit(x,pos)   ( ((x) & ( 0x1 << (pos) )) !=0 )
 
-class EMALLOCERROR : std::exception
+class EMallocException : std::exception
 {
-    private: int length;
+    private: int length_;
     public:
-        EMALLOCERROR(int64_t i) : length(i) {};
+        EMallocException(int64_t i) : length_(i) {};
         std::string what()
         {
             std::stringstream ss;
-            ss << "Your length " << length << " not in range 1..64.";
+            ss << "Your length_ " << length_ << " not in range 1..64.";
             return ss.str();
         }
 };
 
-class EVALUEOVERFLOW : std::exception
+class EValueoverflow_Exception : std::exception
 {
     private: int64_t value;
     public:
-        EVALUEOVERFLOW(int64_t i) : value(i) {};
+        EValueoverflow_Exception(int64_t i) : value(i) {};
         std::string what()
         {
             std::stringstream ss;
@@ -36,13 +36,13 @@ class EVALUEOVERFLOW : std::exception
         }
 };
 
-class ELENGTHDISCREPANCY : std::exception
+class Elength_DiscrepancyException : std::exception
 {
     public:
         std::string what()
         {
             std::stringstream ss;
-            ss << "The discrepancy between the lengths.";
+            ss << "The discrepancy between the length_s.";
             return ss.str();
         }
 };
@@ -50,9 +50,9 @@ class ELENGTHDISCREPANCY : std::exception
 class TBitSet
 {
     private:
-        uint8_t *data;
-        uint8_t length;
-        bool overflow;
+        uint8_t *data_;
+        uint8_t length_;
+        bool overflow_;
         void to_alt_code();
         void to_direct_code();
         void clear_data();
@@ -60,131 +60,131 @@ class TBitSet
         void shl(uint8_t);
         void shr(uint8_t);
     public:
-        uint8_t getlength() const;
-        TBitSet(uint8_t) throw (EMALLOCERROR);
+        uint8_t get_length() const;
+        TBitSet(uint8_t) throw (EMallocException);
         TBitSet(const TBitSet&);
         std::string to_string();
         int64_t to_int();
         bool get_overflow_flag();
         TBitSet& operator++ (int);
         TBitSet& operator-- (int);
-        TBitSet& operator+= (TBitSet&) throw (ELENGTHDISCREPANCY);
+        TBitSet& operator+= (TBitSet&) throw (Elength_DiscrepancyException);
         TBitSet& operator-= (TBitSet&);
         TBitSet& operator<< (int);
         TBitSet& operator>> (int);
         uint8_t& operator[] (int) const;
-        TBitSet& operator= (int64_t) throw (EVALUEOVERFLOW);
+        TBitSet& operator= (int64_t) throw (EValueoverflow_Exception);
 };
 
 void TBitSet::to_alt_code()
 {
-    for (uint8_t i = 1; i < length; i++)
-            data[i] = (data[i] == 0) ? 1 : 0;
-    data[0] = 1;
+    for (uint8_t i = 1; i < length_; i++)
+            data_[i] = (data_[i] == 0) ? 1 : 0;
+    data_[0] = 1;
     this->operator++(1);
 }
 
 void TBitSet::to_direct_code()
 {
 
-    if (data[0] == 1)
+    if (data_[0] == 1)
     {
         bool flag = false;
         this->operator--(1);
-        for (uint8_t i = 0; i < length; i++)
-                data[i] = (data[i] == 0) ? 1 : 0;
-        for (uint8_t i = 1; i < length; i++)
-            if (data[i] != 0)
+        for (uint8_t i = 0; i < length_; i++)
+                data_[i] = (data_[i] == 0) ? 1 : 0;
+        for (uint8_t i = 1; i < length_; i++)
+            if (data_[i] != 0)
             {
                 flag = true;
             }
         if (flag)
-            data[0] = 0;
+            data_[0] = 0;
     }
 }
 
 void TBitSet::shl(uint8_t c)
 {
-    for (int i = 1; i < length - c; i++)
-        data[i] = data[i + c];
-    for (int i = length - c; i < length; i++)
-        data[i] = 0;
+    for (int i = 1; i < length_ - c; i++)
+        data_[i] = data_[i + c];
+    for (int i = length_ - c; i < length_; i++)
+        data_[i] = 0;
 }
 
 void TBitSet::shr(uint8_t c)
 {
-    for (int i = length - c; i >= 1; i--)
-        data[i + c] = data[i];
+    for (int i = length_ - c; i >= 1; i--)
+        data_[i + c] = data_[i];
     for (int i = 1; i < c; i++)
-        data[i] = 0;
+        data_[i] = 0;
 }
 
 void TBitSet::clear_data()
 {
-    for (uint8_t i = 0; i < length; i++)
-            data[i] = 0;
+    for (uint8_t i = 0; i < length_; i++)
+            data_[i] = 0;
 }
 
 void TBitSet::resize(uint8_t len)
 {
-    if (length != len)
+    if (length_ != len)
     {
         int64_t a = to_int();
-        data = new uint8_t[len];
-        length = len;
+        data_ = new uint8_t[len];
+        length_ = len;
         clear_data();
         *this = a;
     }
 }
 
-uint8_t TBitSet::getlength() const
+uint8_t TBitSet::get_length() const
 {
-    return length;
+    return length_;
 }
 
 bool TBitSet::get_overflow_flag()
 {
-    return overflow;
+    return overflow_;
 }
 
-TBitSet::TBitSet(uint8_t len) throw (EMALLOCERROR)
+TBitSet::TBitSet(uint8_t len) throw (EMallocException)
 {
     if ((len > 0) && (len <= 64))
     {
-        length = len;
-        data = new uint8_t[length];
-        overflow = false;
+        length_ = len;
+        data_ = new uint8_t[length_];
+        overflow_ = false;
         clear_data();
     }
     else
-        throw EMALLOCERROR(len);
+        throw EMallocException(len);
 }
 
 TBitSet::TBitSet(const TBitSet& object)
 {
-    length = object.getlength();
-    data = new uint8_t[length];
-    for (int8_t i = 0; i < length; i++)
-        data[i] = object[i];
-    overflow = false;
+    length_ = object.get_length();
+    data_ = new uint8_t[length_];
+    for (int8_t i = 0; i < length_; i++)
+        data_[i] = object[i];
+    overflow_ = false;
 }
 
 std::string TBitSet::to_string()
 {
     std::string s = "";
-    for (int i = 0; i < length; i++)
-        s += char(data[i] + 48);
+    for (int i = 0; i < length_; i++)
+        s += char(data_[i] + 48);
     return s;
 }
 
 int64_t TBitSet::to_int()
 {
-    if (data[0] == 0)
+    if (data_[0] == 0)
     {
         int64_t value = 0;
-        for (int8_t i = 0; i < length; i++)
+        for (int8_t i = 0; i < length_; i++)
         {
-            value += (int)data[i] * (int)pow(2, length - i - 1);
+            value += (int)data_[i] * (int)pow(2, length_ - i - 1);
         }
         return value;
     }
@@ -192,9 +192,9 @@ int64_t TBitSet::to_int()
     {
         int64_t value = 0;
         to_direct_code();
-        for (int8_t i = 0; i < length; i++)
+        for (int8_t i = 0; i < length_; i++)
         {
-            value += (int)data[i] * (int)pow(2, length - i - 1);
+            value += (int)data_[i] * (int)pow(2, length_ - i - 1);
         }
         to_alt_code();
         return -value;
@@ -204,50 +204,50 @@ int64_t TBitSet::to_int()
 
 TBitSet& TBitSet::operator++ (int value)
 {
-    data[length - 1]++;
-    for (int i = length - 1; i >= 0; i--)
+    data_[length_ - 1]++;
+    for (int i = length_ - 1; i >= 0; i--)
     {
-        if (data[i] == 2)
+        if (data_[i] == 2)
         {
-            data[i] = 0;
+            data_[i] = 0;
             if (i >= 1)
-                data[i - 1]++;
+                data_[i - 1]++;
             else
-                {overflow = true; return *this;}
+                {overflow_ = true; return *this;}
         }
     }
-    overflow = false;
+    overflow_ = false;
     return *this;
 }
 
 TBitSet& TBitSet::operator-- (int value)
 {
     bool flag = true;
-    overflow = false;
-    for (int i = length - 1; i >= 0; i--)
+    overflow_ = false;
+    for (int i = length_ - 1; i >= 0; i--)
     {
-        if (flag && (data[i] == 1))
+        if (flag && (data_[i] == 1))
         {
-            data[i] = 0;
+            data_[i] = 0;
             flag = false;
         }
         else
-        if (flag && (data[i] == 0))
+        if (flag && (data_[i] == 0))
         {
-            data[i] = 1;
+            data_[i] = 1;
         }
         if (flag == false)
             break;
     }
     if (flag)
-        overflow = true;
+        overflow_ = true;
     return *this;
 }
 
-TBitSet& TBitSet::operator+= (TBitSet& value) throw(ELENGTHDISCREPANCY)
+TBitSet& TBitSet::operator+= (TBitSet& value) throw(Elength_DiscrepancyException)
 {
-    if (length > value.getlength())
-        throw ELENGTHDISCREPANCY();
+    if (length_ > value.get_length())
+        throw Elength_DiscrepancyException();
 
     if (this == &value)
     {
@@ -255,28 +255,28 @@ TBitSet& TBitSet::operator+= (TBitSet& value) throw(ELENGTHDISCREPANCY)
         return *this;
     }
 
-    resize(std::max(length, value.getlength()));
-    int8_t l = std::min(length, value.getlength());
-    int8_t delta = length - value.getlength();
+    resize(std::max(length_, value.get_length()));
+    int8_t l = std::min(length_, value.get_length());
+    int8_t delta = length_ - value.get_length();
     for (int8_t i = l - 1; i >= 0; i--)
     {
-        data[i + delta] += value[i];
+        data_[i + delta] += value[i];
 
-        if (data[i + delta] >= 2)
+        if (data_[i + delta] >= 2)
         {
-            data[i + delta] -= 2;
+            data_[i + delta] -= 2;
             if (i >= 1)
             {
-                data[i + delta - 1]++;
+                data_[i + delta - 1]++;
             }
             else
             {
-                overflow = true;
+                overflow_ = true;
                 return *this;
             }
         }
     }
-    overflow = false;
+    overflow_ = false;
     return *this;
 }
 
@@ -306,38 +306,38 @@ TBitSet& TBitSet::operator>>(int len)
 
 uint8_t& TBitSet::operator[] (int i) const
 {
-    return data[i];
+    return data_[i];
 }
 
-TBitSet& TBitSet::operator= (int64_t value) throw (EVALUEOVERFLOW)
+TBitSet& TBitSet::operator= (int64_t value) throw (EValueoverflow_Exception)
 {
-    if ((value > 0) && (value > (pow(2, length - 1) - 1) ))
-        throw EVALUEOVERFLOW(value);
-    if ((value < 0) && (value < -(pow(2, length - 1)) ))
-        throw EVALUEOVERFLOW(value);
+    if ((value > 0) && (value > (pow(2, length_ - 1) - 1) ))
+        throw EValueoverflow_Exception(value);
+    if ((value < 0) && (value < -(pow(2, length_ - 1)) ))
+        throw EValueoverflow_Exception(value);
 
-    if (value == -(pow(2, length - 1)))
+    if (value == -(pow(2, length_ - 1)))
     {
         clear_data();
-        data[0] = 1;
-        overflow = false;
+        data_[0] = 1;
+        overflow_ = false;
         return *this;
     }
 
     if (value >= 0)
     {
-        for (uint8_t i = 0; i < length; i++){
-            data[i] = getbit(value, length - i - 1);
+        for (uint8_t i = 0; i < length_; i++){
+            data_[i] = getbit(value, length_ - i - 1);
         }
     }
     else
     {
         value = -value;
-        for (uint8_t i = 0; i < length; i++)
-            data[i] = getbit(value, length - i - 1);
+        for (uint8_t i = 0; i < length_; i++)
+            data_[i] = getbit(value, length_ - i - 1);
         to_alt_code();
     }
-    overflow = false;
+    overflow_ = false;
 }
 
 TBitSet operator+ (TBitSet& left, TBitSet& right)
