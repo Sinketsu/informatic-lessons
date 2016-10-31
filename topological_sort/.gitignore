@@ -2,3 +2,5 @@
 /example.o
 /tgraph.o
 /__history/
+*.dproj.local
+*.res
